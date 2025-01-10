@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html dir="rtl">
+  <head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <title>עץ משפחה</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+      .card {
+        transition: transform 0.2s;
+        position: relative;
+      }
+      .card:hover {
+        transform: translateY(-5px);
+      }
+      .name-link {
+        color: #2563eb;
+        cursor: pointer;
+      }
+      .name-link:hover {
+        color: #1d4ed8;
+        opacity: 0.8;
+      }
+      .highlighted {
+        animation: highlight 2s;
+      }
+      @keyframes highlight {
+        0% { background-color: #93c5fd; }
+        100% { background-color: white; }
+      }
+      .add-button {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        cursor: pointer;
+        z-index: 10;
+        background: white;
+        border-radius: 50%;
+        width: 25px;
+        height: 25px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+      }
+      .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 600px;
+        border-radius: 8px;
+        position: relative;
+      }
+       .close-button {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+      .button-locked {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+      .success-message {
+        color: #059669;
+        text-align: center;
+        margin-top: 0.5rem;
+        display: none;
+      }
+      .search-container {
+        max-width: 600px;
+        margin: 0 auto 2rem;
+        position: relative;
+      }
+      
+      .search-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        transition: all 0.2s;
+      }
+      
+      .search-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+      
+      .autocomplete-items {
+        position: absolute;
+        border: 1px solid #d1d5db;
+        border-top: none;
+        z-index: 99;
+        top: 100%;
+        left: 0;
+        right: 0;
+        border-radius: 0 0 0.5rem 0.5rem;
+        background: white;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+      
+      .autocomplete-item {
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid #f3f4f6;
+      }
+      
+      .autocomplete-item:hover {
+        background-color: #f3f4f6;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100">
+    <div id="app" class="p-4 min-h-screen">
+      <header class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">עץ משפחה</h1>
+        <div class="search-container">
+          <input type="text" 
+                 id="searchInput" 
+                 class="search-input" 
+                 placeholder="חיפוש לפי שם..."
+                 autocomplete="off">
+          <div id="autocompleteList" class="autocomplete-items" style="display: none;"></div>
+        </div>
+      </header>
+      
+      <main>
+        <div id="cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+          <!-- Cards will be inserted here -->
+        </div>
+      </main>
+      
+       <div id="loading" class="text-center py-8">
+        <p class="text-gray-600">טוען נתונים...</p>
+      </div>
+    </div>
+    
+    <div id="addModal" class="modal">
+       <div class="modal-content">
+            <span class="close-button">×</span>
+             <h2 class="text-xl font-bold mb-4 text-center">הוספת קרוב משפחה</h2>
+              
+            <form id="addPersonForm" class="space-y-4">
+                <div class="flex flex-col">
+                    <label for="relationshipType" class="text-gray-700">סוג קשר:</label>
+                    <select id="relationshipType" name="relationshipType" class="border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-500" required>
+                      <option value="child">בן/בת</option>
+                      <option value="sibling">אח/אחות</option>
+                      <option value="spouse">בן/בת זוג</option>
+                    </select>
+                  </div>
+                
+                <div class="flex flex-col">
+                  <label for="firstName" class="text-gray-700">שם פרטי:</label>
+                  <input type="text" id="firstName" name="firstName" class="border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-500" required>
+                </div>
+                
+                <div class="flex flex-col">
+                  <label for="lastName" class="text-gray-700">שם משפחה:</label>
+                  <input type="text" id="lastName" name="lastName" class="border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-500" required>
+                </div>
+                
+                <div class="text-gray-500 text-sm mb-2">
+                  נא למלא תאריך לועזי או תאריך עברי. יש לרשום רק אחד מהשניים.
+                </div>
+                
+                <div class="flex flex-col">
+                  <label for="gregDate" class="text-gray-700">תאריך לידה (לדוגמא 18.06.1997):</label>
+                  <input type="text" id="gregDate" name="gregDate" class="border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-500" placeholder="dd.mm.yyyy">
+                </div>
+                
+                <div class="flex flex-col">
+                  <label for="hebrewDate" class="text-gray-700">תאריך לידה עברי (לדוגמא ג' באייר תשל"ד):</label>
+                  <input type="text" id="hebrewDate" name="hebrewDate" class="border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-500">
+                </div>
+                
+               <div id="marriageDateField" class="hidden flex flex-col">
+                  <label for="marriageDate" class="text-gray-700">תאריך נישואין (לדוגמא 18.06.1997):</label>
+                    <input type="text" id="marriageDate" name="marriageDate" class="border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-500" placeholder="dd.mm.yyyy">
+              </div>
+              <div id="parentDetails" class="hidden space-y-4">
+              </div>
+              
+              <div class="flex flex-col">
+                <label for="email" class="text-gray-700">אימייל:</label>
+                <input type="email" 
+                       id="email" 
+                       name="email" 
+                       class="border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-500">
+              </div>
+              
+              <div class="flex flex-col">
+                <label for="phone" class="text-gray-700">טלפון:</label>
+                <input type="tel" 
+                       id="phone" 
+                       name="phone" 
+                       class="border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-500"
+                       placeholder="050-0000000">
+              </div>
+            
+                <button type="submit" id="submitButton" class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">הוסף</button>
+                <p id="successMessage" class="success-message">ההרשמה הצליחה!</p>
+              </form>
+        </div>
+      </div>
+    <script>
+      // Make scrollToCard function global
+      window.scrollToCard = function(id) {
+        const card = document.getElementById(`card-${id}`);
+        if (card) {
+          document.querySelectorAll('.card').forEach(c => {
+            c.classList.remove('highlighted');
+          });
+          card.classList.add('highlighted');
+          card.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+        }
+      };
+
+      function formatDate(person, type = 'birth') {
+        let dateStr = '';
+        if (type === 'birth') {
+          if (person.hebrewDate) {
+            dateStr += person.hebrewDate;
+          }
+          if (person.hebrewDate && person.gregorianDate) {
+            dateStr += ' | ';
+          }
+          if (person.gregorianDate) {
+            dateStr += person.gregorianDate;
+          }
+        } else if (type === 'death') {
+          if (person.hebrewDeathDate) {
+            dateStr += person.hebrewDeathDate;
+          }
+          if (person.hebrewDeathDate && person.gregorianDeathDate) {
+            dateStr += ' | ';
+          }
+          if (person.gregorianDeathDate) {
+            dateStr += person.gregorianDeathDate;
+          }
+        }
+        return dateStr;
+      }
+      
+      function createNameLink(name, id) {
+        // Always show the name, but only make it clickable if the person exists and isn't hidden
+        if (!window.allPeople) return name;
+        const person = window.allPeople.find(p => p.id === id);
+        if (person && !person.isHidden) {
+          return `<span class="name-link" onclick="window.scrollToCard('${id}')">${name}</span>`;
+        }
+        return name;
+      }
+      
+      function formatParents(parents, parentIds) {
+        const parts = [];
+        if (parents.father && parentIds.fatherId) {
+          parts.push(`אבא: ${createNameLink(parents.father, parentIds.fatherId)}`);
+        }
+        if (parents.mother && parentIds.motherId) {
+          parts.push(`אמא: ${createNameLink(parents.mother, parentIds.motherId)}`);
+        }
+        return parts.length > 0 ? parts.join(', ') : '';
+      }
+      
+      function formatChildren(children) {
+        if (!children || children.length === 0) return [];
+        const childrenLinks = children
+          .filter(child => child && child.name)
+          .map(child => createNameLink(child.name, child.id))
+          .join(', ');
+        return [`ילדים: ${childrenLinks}`];
+      }
+      
+      function formatSiblings(siblings) {
+        const parts = [];
+        
+        if (siblings.fullSiblings && siblings.fullSiblings.length > 0) {
+          const names = siblings.fullSiblings
+            .filter(s => s && s.name)
+            .map(s => createNameLink(s.name, s.id))
+            .join(', ');
+          parts.push(`אחים/אחיות: ${names}`);
+        }
+        
+        if (siblings.halfSiblings && siblings.halfSiblings.length > 0) {
+          const halfSiblingsByType = siblings.halfSiblings.reduce((acc, sibling) => {
+            if (!acc[sibling.relationship]) {
+              acc[sibling.relationship] = [];
+            }
+            acc[sibling.relationship].push(createNameLink(sibling.name, sibling.id));
+            return acc;
+          }, {});
+          
+          Object.entries(halfSiblingsByType).forEach(([type, names]) => {
+            parts.push(`אחים/אחיות ${type}: ${names.join(', ')}`);
+          });
+        }
+        
+        return parts;
+      }
+      
+      function createCard(person) {
+         const dateDisplay = formatDate(person, 'birth');
+         const deathDisplay = formatDate(person, 'death');
+         const parentsDisplay = formatParents(person.parents, {
+           fatherId: person.fatherId,
+           motherId: person.motherId
+         });
+         const childrenLines = formatChildren(person.children);
+         const siblingsLines = formatSiblings(person.siblings);
+         
+         return `
+           <div id="card-${person.id}" class="card bg-white rounded-lg shadow-lg p-6 hover:shadow-xl">
+               <div class="add-button" data-person-id="${person.id}">
+                   <i class="fas fa-plus"></i>
+               </div>
+               <div class="text-right">
+                   ${parentsDisplay ? `
+                   <div class="text-sm text-gray-500 mb-2">
+                       ${parentsDisplay}
+                   </div>
+                   ` : ''}
+               
+                   <h2 class="text-xl font-bold mb-2">${person.firstName} ${person.lastName}</h2>
+               
+                   <div class="text-gray-600 mb-2">
+                   ${dateDisplay ? `<p>תאריך לידה: <strong>${dateDisplay}</strong></p>` : ''}
+                   ${deathDisplay ? `<p class="mt-1">תאריך פטירה: <strong>${deathDisplay}</strong></p>` : ''}
+                   </div>
+                   
+        ${person.spouse ? `
+            <div class="text-sm text-gray-500 mb-2 border-t pt-2">
+            <p>בן/בת זוג: ${createNameLink(person.spouse, person.spouseId)}${person.marriageDate ? ` (${person.marriageDate})` : ''}</p>
+            </div>
+        ` : ''}
+                
+                 ${childrenLines.length > 0 ? `
+                <div class="text-sm text-gray-500 mb-2">
+                    ${childrenLines.map(line => `<p>${line}</p>`).join('')}
+                </div>
+              ` : ''}
+                
+                ${siblingsLines.length > 0 ? `
+                <div class="text-sm text-gray-500 border-t pt-2">
+                    ${siblingsLines.map(line => `<p>${line}</p>`).join('')}
+                </div>
+              ` : ''}
+                   </div>
+               </div>
+           `;
+       }
+      
+      function loadData() {
+        const container = document.getElementById('cards-container');
+        const loading = document.getElementById('loading');
+        
+        loading.style.display = 'block';
+        container.innerHTML = '';
+        
+        google.script.run
+          .withSuccessHandler(function(data) {
+            loading.style.display = 'none';
+            // Store all people data globally for reference
+            window.allPeople = data;
+            
+            if (!data || data.length === 0) {
+              container.innerHTML = `
+                <div class="col-span-full text-center py-8">
+                  <p class="text-gray-600">לא נמצאו נתונים</p>
+                </div>
+              `;
+              return;
+            }
+            
+            data.forEach(person => {
+              container.innerHTML += createCard(person);
+            });
+              
+             document.querySelectorAll('.add-button').forEach(button => {
+              button.addEventListener('click', function() {
+                  const personId = this.dataset.personId;
+                  openAddModal(personId);
+                  
+                  // Add event listener for the close button
+                  const closeButton = document.querySelector('.close-button');
+                  closeButton.addEventListener('click', function() {
+                     closeAddModal();
+                  });
+              });
+            });
+          })
+          .withFailureHandler(function(error) {
+            loading.style.display = 'none';
+            container.innerHTML = `
+              <div class="col-span-full text-center py-8">
+                <p class="text-red-600">שגיאה בטעינת הנתונים</p>
+              </div>
+            `;
+            console.error('Error:', error);
+          })
+          .getData();
+      }
+      
+        function openAddModal(personId) {
+            const modal = document.getElementById('addModal');
+            modal.style.display = "block";
+             modal.dataset.relatedPersonId = personId;
+            const form = document.getElementById('addPersonForm');
+             form.reset();
+              handleRelationshipTypeChange();
+              
+            // Set focus on the first input
+           document.getElementById('firstName').focus();
+       }
+
+      function closeAddModal() {
+          const modal = document.getElementById('addModal');
+          modal.style.display = "none";
+      }
+    
+      
+    function handleRelationshipTypeChange() {
+        const relationshipTypeSelect = document.getElementById('relationshipType');
+        const marriageDateField = document.getElementById('marriageDateField');
+        const parentDetailsDiv = document.getElementById('parentDetails');
+        
+         if (relationshipTypeSelect.value === 'spouse') {
+            marriageDateField.classList.remove('hidden');
+             parentDetailsDiv.classList.add('hidden');
+        } else if (relationshipTypeSelect.value === 'child') {
+             marriageDateField.classList.add('hidden');
+             parentDetailsDiv.classList.remove('hidden');
+        } else {
+           marriageDateField.classList.add('hidden');
+            parentDetailsDiv.classList.add('hidden');
+        }
+    }
+  
+       function handleParentTypeChange(){
+           const parentTypeSelect = document.getElementById('parentType');
+           // Remove references to parentSpouseDetails
+       }
+    
+     document.getElementById('relationshipType').addEventListener('change', handleRelationshipTypeChange);
+     document.getElementById('addPersonForm').addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent default form submission
+           const modal = document.getElementById('addModal');
+           const relatedPersonId = modal.dataset.relatedPersonId;
+           const firstName = document.getElementById('firstName').value;
+           const lastName = document.getElementById('lastName').value;
+           const gregDate = document.getElementById('gregDate').value;
+           const hebrewDate = document.getElementById('hebrewDate').value;
+          const relationshipType = document.getElementById('relationshipType').value;
+          const marriageDate = document.getElementById('marriageDate').value;
+          const email = document.getElementById('email').value;
+          const phone = document.getElementById('phone').value;
+            
+         const formData = {
+              relatedPersonId: relatedPersonId,
+              firstName: firstName,
+              lastName: lastName,
+              gregDate: gregDate,
+              hebrewDate: hebrewDate,
+             relationshipType: relationshipType,
+             marriageDate: marriageDate,
+             email: email,
+             phone: phone
+            };
+
+            const submitButton = document.getElementById('submitButton');
+            const successMessage = document.getElementById('successMessage');
+            
+            // Lock button
+            submitButton.disabled = true;
+            submitButton.classList.add('button-locked');
+            submitButton.textContent = '...מוסיף';
+
+            google.script.run
+                .withSuccessHandler(function(newPersonId) {
+                    // Show success message
+                    successMessage.style.display = 'block';
+                    
+                    // Reset after 5 seconds
+                    setTimeout(() => {
+                        submitButton.disabled = false;
+                        submitButton.classList.remove('button-locked');
+                        submitButton.textContent = 'הוסף';
+                        successMessage.style.display = 'none';
+                        closeAddModal();  // Just close the modal without reloading
+                    }, 5000);
+                })
+                .withFailureHandler(function(error) {
+                    console.error('Error adding new person:', error);
+                    alert('Failed to add new person. Please try again.');
+                    submitButton.disabled = false;
+                    submitButton.classList.remove('button-locked');
+                    submitButton.textContent = 'הוסף';
+                })
+                 .addPerson(formData);
+        });
+
+      function setupSearch() {
+        const searchInput = document.getElementById('searchInput');
+        const autocompleteList = document.getElementById('autocompleteList');
+        
+        searchInput.addEventListener('input', function() {
+          const query = this.value.trim().toLowerCase();
+          if (!query) {
+            autocompleteList.style.display = 'none';
+            return;
+          }
+          
+          // Filter people by first name or last name
+          const matches = window.allPeople.filter(person => 
+            person.firstName.toLowerCase().startsWith(query) ||
+            person.lastName.toLowerCase().startsWith(query)
+          );
+          
+          if (matches.length > 0) {
+            autocompleteList.innerHTML = matches
+              .map(person => `
+                <div class="autocomplete-item" onclick="selectPerson('${person.id}')">
+                  ${person.firstName} ${person.lastName}
+                </div>
+              `).join('');
+            autocompleteList.style.display = 'block';
+          } else {
+            autocompleteList.style.display = 'none';
+          }
+        });
+        
+        // Close autocomplete when clicking outside
+        document.addEventListener('click', function(e) {
+          if (!searchInput.contains(e.target) && !autocompleteList.contains(e.target)) {
+            autocompleteList.style.display = 'none';
+          }
+        });
+      }
+      
+      function selectPerson(id) {
+        document.getElementById('autocompleteList').style.display = 'none';
+        document.getElementById('searchInput').value = '';
+        window.scrollToCard(id);
+      }
+      
+      window.onload = function() {
+        loadData();
+        setupSearch();
+      };
+    </script>
+  </body>
+</html>
