@@ -166,6 +166,7 @@
                       <option value="child">בן/בת</option>
                       <option value="sibling">אח/אחות</option>
                       <option value="spouse">בן/בת זוג</option>
+                      <option value="parent">הורה</option>
                     </select>
                   </div>
                 
@@ -198,6 +199,14 @@
                     <input type="text" id="marriageDate" name="marriageDate" class="border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-500" placeholder="dd.mm.yyyy">
               </div>
               <div id="parentDetails" class="hidden space-y-4">
+              </div>
+              
+              <div class="flex flex-col" id="parentTypeContainer" style="display: none;">
+                <label for="parentType" class="text-gray-700">סוג הורה:</label>
+                <select id="parentType" name="parentType" class="border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-500">
+                  <option value="father">אבא</option>
+                  <option value="mother">אמא</option>
+                </select>
               </div>
               
               <div class="flex flex-col">
@@ -446,16 +455,24 @@
         const relationshipTypeSelect = document.getElementById('relationshipType');
         const marriageDateField = document.getElementById('marriageDateField');
         const parentDetailsDiv = document.getElementById('parentDetails');
+        const parentTypeContainer = document.getElementById('parentTypeContainer');
         
          if (relationshipTypeSelect.value === 'spouse') {
             marriageDateField.classList.remove('hidden');
              parentDetailsDiv.classList.add('hidden');
+             parentTypeContainer.style.display = 'none';
         } else if (relationshipTypeSelect.value === 'child') {
              marriageDateField.classList.add('hidden');
              parentDetailsDiv.classList.remove('hidden');
+             parentTypeContainer.style.display = 'none';
+        } else if (relationshipTypeSelect.value === 'parent') {
+            parentTypeContainer.style.display = 'block';
+            marriageDateField.classList.add('hidden');
+            parentDetailsDiv.classList.add('hidden');
         } else {
            marriageDateField.classList.add('hidden');
             parentDetailsDiv.classList.add('hidden');
+            parentTypeContainer.style.display = 'none';
         }
     }
   
@@ -477,6 +494,7 @@
           const marriageDate = document.getElementById('marriageDate').value;
           const email = document.getElementById('email').value;
           const phone = document.getElementById('phone').value;
+          const parentType = document.getElementById('parentType').value;
             
          const formData = {
               relatedPersonId: relatedPersonId,
@@ -487,7 +505,8 @@
              relationshipType: relationshipType,
              marriageDate: marriageDate,
              email: email,
-             phone: phone
+             phone: phone,
+             parentType: parentType
             };
 
             const submitButton = document.getElementById('submitButton');

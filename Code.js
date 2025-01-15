@@ -295,6 +295,43 @@ function addPerson(formData) {
         }
     }
     
+    if (formData.relationshipType === 'parent') {
+        const parentType = formData.parentType;
+        const relatedPersonId = formData.relatedPersonId;
+        console.log("Adding parent:", parentType, "to person ID:", relatedPersonId);
+
+        // Get related person's data
+        const allPeople = getData();
+        const relatedPerson = allPeople.find(p => p.id === relatedPersonId);
+        
+        if (relatedPerson) {
+            // Set the new parent ID in the related person's record
+            const rowNumber = findRowByPersonId(relatedPersonId, sheet);
+            if (parentType === 'father') {
+                sheet.getRange(rowNumber, COLUMNS.FATHER_ID).setValue(newId);
+            } else {
+                sheet.getRange(rowNumber, COLUMNS.MOTHER_ID).setValue(newId);
+            }
+
+            // Update siblings if they exist
+            const siblings = allPeople.filter(p => 
+                (p.fatherId === relatedPerson.fatherId && relatedPerson.fatherId) || 
+                (p.motherId === relatedPerson.motherId && relatedPerson.motherId)
+            );
+
+            siblings.forEach(sibling => {
+                const siblingRow = findRowByPersonId(sibling.id, sheet);
+                if (siblingRow && sibling.id !== relatedPersonId) {
+                    if (parentType === 'father') {
+                        sheet.getRange(siblingRow, COLUMNS.FATHER_ID).setValue(newId);
+                    } else {
+                        sheet.getRange(siblingRow, COLUMNS.MOTHER_ID).setValue(newId);
+                    }
+                }
+            });
+        }
+    }
+    
     console.log("Final row data to be inserted:", newRow);
     
     try {
@@ -348,4 +385,14 @@ function isIdExists(id, sheet) {
     }
   }
   return false;
+}
+
+function findRowByPersonId(personId, sheet) {
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+        if (data[i][0].toString() === personId) {
+            return i + 1;  // Adding 1 because array is 0-based but sheet rows are 1-based
+        }
+    }
+    return null;
 }
