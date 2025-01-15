@@ -307,10 +307,29 @@ function addPerson(formData) {
         if (relatedPerson) {
             // Set the new parent ID in the related person's record
             const rowNumber = findRowByPersonId(relatedPersonId, sheet);
+            
+            // Check if there's an existing parent of the opposite type
+            const existingFatherId = relatedPerson.fatherId;
+            const existingMotherId = relatedPerson.motherId;
+            
             if (parentType === 'father') {
                 sheet.getRange(rowNumber, COLUMNS.FATHER_ID).setValue(newId);
+                // If there's an existing mother, set her as spouse
+                if (existingMotherId) {
+                    // Set the new father as spouse for the existing mother
+                    updateSpouseRecord(existingMotherId, newId, '', sheet);
+                    // Set the existing mother as spouse for the new father
+                    newRow[COLUMNS.SPOUSE_ID - 1] = existingMotherId;
+                }
             } else {
                 sheet.getRange(rowNumber, COLUMNS.MOTHER_ID).setValue(newId);
+                // If there's an existing father, set him as spouse
+                if (existingFatherId) {
+                    // Set the new mother as spouse for the existing father
+                    updateSpouseRecord(existingFatherId, newId, '', sheet);
+                    // Set the existing father as spouse for the new mother
+                    newRow[COLUMNS.SPOUSE_ID - 1] = existingFatherId;
+                }
             }
 
             // Update siblings if they exist

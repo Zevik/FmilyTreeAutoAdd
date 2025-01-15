@@ -327,7 +327,7 @@
         if (parents.mother && parentIds.motherId) {
           parts.push(`אמא: ${createNameLink(parents.mother, parentIds.motherId)}`);
         }
-        return parts.length > 0 ? parts.join(', ') : '';
+        return parts.join(' '); // Changed from parts.join(', ') to parts.join(' ')
       }
       
       function formatChildren(children) {
